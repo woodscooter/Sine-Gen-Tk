@@ -141,7 +141,7 @@ def generator(threadName,q):
             gen_freq2 = data[3]
             gen_duration = data[4]
             gen_gtime = data[5]
-            command = "./play -n -c1 synth %2.1f sin %2.3f k sin %2.3f k lowpass 9k : trim 0 %2.1f lowpass 1k 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
+            command = "./play -n -c1 synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f lowpass 1k 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
             subprocess.run(command,shell=True)
 
 def calc (parameter):
