@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 # Python GUI for sine-gen 2
 
-import tkinter as tk
+#import tkinter as tk
+from tkinter import *
 from tkinter import font
 from tkinter.ttk import *
 import threading
 import queue
 import subprocess
+
+root = Tk()
+root.title("Sine Generator")
 
 
 PUMP = 15  # GPIO15, pin 10
@@ -14,33 +18,34 @@ gen_q = queue.Queue(1)
 pump_q = queue.Queue(1)
 progress_q = queue.Queue(1)
 
-class Application (tk.Frame):
+class Application (Frame):
     def __init__(self,master=None):
         super().__init__(master)
-        self.pack()
+#        self.pack()
         self.runstate = 1
-        self.freq = tk.StringVar()
+        self.freq = StringVar()
         self.freq.set (2.6)
-        self.freq2 = tk.StringVar()
+        self.freq2 = StringVar()
         self.freq2.set (2.85)
-        self.shadow = tk.StringVar()
+        self.shadow = StringVar()
         self.shadow.set (1.0594)
-        self.duration = tk.StringVar()
+        self.duration = StringVar()
         self.duration.set (0.5)
-        self.guard = tk.StringVar()
+        self.guard = StringVar()
         self.guard.set (0.5)
-        self.gtime = tk.StringVar()
+        self.gtime = StringVar()
         self.gtime.set (0.5)
-        self.pumprun = tk.StringVar()
+        self.pumprun = StringVar()
         self.pumprun.set (1)
-        self.pumpstop = tk.StringVar()
+        self.pumpstop = StringVar()
         self.pumpstop.set (20)
-        self.genstate = tk.StringVar()
+        self.genstate = StringVar()
         self.genstate.set ("OFF")
-        self.pumpstate = tk.StringVar()
+        self.pumpstate = StringVar()
         self.pumpstate.set ("OFF")
-        self.progress_var = tk.StringVar()
+        self.progress_var = StringVar()
         self.progress_var.set(50.0)
+        self.event = threading.Event()
 
         self.create_widgets()
     def create_widgets(self):
@@ -48,40 +53,42 @@ class Application (tk.Frame):
         default_font = font.nametofont("TkDefaultFont")
         default_font.configure(family='Liberation Sans', size=24, weight='bold')
 
-        tk.Label(self,text="SINE WAVE GENERATOR",pady=20).grid(row=0,column=0,columnspan=5)
+        Label(self,text="SINE WAVE GENERATOR").grid(row=0,column=0,columnspan=5)
 
-        tk.Label(self,text="Frequency (kHz)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=3,column=0)
-        f1 = tk.Spinbox(self,textvariable = self.freq ,from_= 0.2, to = 10.01,increment=0.01,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=3,column=1)
-        tk.Label(self,text="2nd Frequency (kHz)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=4,column=0)
-    #    f2 = tk.Spinbox(self,textvariable = self.freq2 ,from_= 2.0, to = 3.9,increment=0.01,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=4,column=1)
-        f2 = tk.Label(self,textvariable = self.freq2 ,relief = 'sunken', bg='#fff',width=7,anchor='w').grid(row=4,column=1,sticky='W')
+        Label(self,text="Frequency (kHz)",relief = 'raised', width=20,anchor='center').grid(row=3,column=0)
+        f1 = Spinbox(self,textvariable = self.freq ,from_= 0.2, to = 10.01,increment=0.01,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=3,column=1)
+        Label(self,text="2nd Frequency (kHz)",relief = 'raised', width=20,anchor='center').grid(row=4,column=0)
+    #    f2 = Spinbox(self,textvariable = self.freq2 ,from_= 2.0, to = 3.9,increment=0.01,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=4,column=1)
+        f2 = Label(self,textvariable = self.freq2 ,relief = 'sunken', background='#fff',width=7,anchor='w').grid(row=4,column=1,sticky='W')
 
-        tk.Button(self,text="12\N{SQUARE ROOT}2",command=self.shadow_default).grid(row=3,column=4)
-        tk.Label(self,text="Frequency ratio",relief = 'raised', width=20,anchor='center', pady=5).grid(row=4,column=3)
-        self.shad = tk.Spinbox(self,textvariable = self.shadow ,from_= 0.001, to = 2.5,increment=0.001,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=4,column=4)
+        Button(self,text="12\N{SQUARE ROOT}2",command=self.shadow_default).grid(row=3,column=4)
+        Label(self,text="Frequency ratio",relief = 'raised', width=20,anchor='center').grid(row=4,column=3)
+        self.shad = Spinbox(self,textvariable = self.shadow ,from_= 0.001, to = 2.5,increment=0.001,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=4,column=4)
 
-        tk.Label(self,text="", width=5, pady=5).grid(row=5,column=2)
+        Label(self,text="", width=5).grid(row=5,column=2)
 
-        tk.Label(self,text="Generator is",relief = 'raised', width=20,anchor='center', pady=5).grid(row=6,column=0)
-        self.gen =tk.Spinbox(self,textvariable = self.genstate ,values=("OFF","ON"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=1)
-        tk.Label(self,text="Generator on (s)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=7,column=0)
-        dur = tk.Spinbox(self,textvariable = self.duration ,from_= 0.1, to = 1.9,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=7,column=1)
-        tk.Label(self,text="Generator off (s)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=8,column=0)
-        guard = tk.Spinbox(self,textvariable = self.gtime ,from_= 0.1, to = 1.9,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=8,column=1)
+        Label(self,text="Generator is",relief = 'raised', width=20,anchor='center').grid(row=6,column=0)
+        self.gen =Spinbox(self,textvariable = self.genstate ,values=("OFF","ON"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=1)
+        Label(self,text="Generator on (s)",relief = 'raised', width=20,anchor='center').grid(row=7,column=0)
+        dur = Spinbox(self,textvariable = self.duration ,from_= 0.1, to = 1.9,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=7,column=1)
+        Label(self,text="Generator off (s)",relief = 'raised', width=20,anchor='center').grid(row=8,column=0)
+        guard = Spinbox(self,textvariable = self.gtime ,from_= 0.1, to = 1.9,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=8,column=1)
 
-        tk.Label(self,text="Valve is",relief = 'raised', width=20,anchor='center', pady=5).grid(row=6,column=3)
-        self.pump = tk.Spinbox(self,textvariable = self.pumpstate ,values=("OFF","ON"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=4)
-        tk.Label(self,text="Flush time (s)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=7,column=3)
-        run = tk.Spinbox(self,textvariable = self.pumprun ,from_= 0.1, to = 10.0,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=7,column=4)
-        tk.Label(self,text="Pause time (s)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=8,column=3)
-        stop = tk.Spinbox(self,textvariable = self.pumpstop ,from_= 1.0, to = 60,increment=1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=8,column=4)
+        Label(self,text="Valve is",relief = 'raised', width=20,anchor='center').grid(row=6,column=3)
+        self.pump = Spinbox(self,textvariable = self.pumpstate ,values=("OFF","ON"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=4)
+        Label(self,text="Flush time (s)",relief = 'raised', width=20,anchor='center').grid(row=7,column=3)
+        run = Spinbox(self,textvariable = self.pumprun ,from_= 0.1, to = 10.0,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=7,column=4)
+        Label(self,text="Pause time (s)",relief = 'raised', width=20,anchor='center').grid(row=8,column=3)
+        stop = Spinbox(self,textvariable = self.pumpstop ,from_= 1.0, to = 60,increment=1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=8,column=4)
 
-#        tk.Label(self,text="Signal").grid(row=9,column=0)
-#        tk.Label(self,text="Valve").grid(row=9,column=3)
-        tk.Label(self,text="", width=5, pady=5).grid(row=9,column=2)
-        self.bar = tk.ttk.Progressbar(self,orient="horizontal",length=500,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
+        self.w = Canvas(self,width=110, height=18, relief="sunken")
+        self.w.grid(row=9,column=1)
+        self.r = self.w.create_rectangle(0, 0, 99, 16, fill="silver")
 
-        tk.Button(self,text="Quit",command=self.quitnot).grid(row=10,column=4)
+        Label(self,text="", width=5).grid(row=9,column=2)
+        self.bar = Progressbar(self,orient="horizontal",length=500,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
+
+        Button(self,text="Quit",command=self.quitnot).grid(row=10,column=0)
 
     def confess(self):
         q1_data = [ self.runstate, self.genstate.get(), float(self.freq.get()), float(self.freq2.get()), float(self.duration.get()), float(self.gtime.get()) ]
@@ -93,6 +100,15 @@ class Application (tk.Frame):
         if not progress_q.empty():
             self.progress_data = progress_q.get()
             self.progress_var.set(self.progress_data)
+        if self.genstate.get() == 'ON':
+            self.w.itemconfig(self.r,fill="red")
+        else:
+            self.w.itemconfig(self.r,fill="silver")
+        if self.pumpstate.get() == "OFF":
+            self.event.set()
+        else:
+            self.event.clear()
+
         if not self.runstate:
             thread2.stop()
             thread1.join()
@@ -145,7 +161,7 @@ def generator(threadName,q):
             gen_freq2 = data[3]
             gen_duration = data[4]
             gen_gtime = data[5]
-            command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
+            command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
             subprocess.call(command,shell=True)
 #            subprocess.call(command)
 
@@ -187,6 +203,8 @@ def setpump(threadName,q):
                 subprocess.call(sleepcmd,shell=True)
                 pumpcount -= 1
                 pumpprogress += 1
+                if app.event.isSet():
+                    break
                 if not progress_q.full():
                     if pumptotal == 0:
                         pumptotal = 1
@@ -201,6 +219,8 @@ def setpump(threadName,q):
                     return
                 pumpcount -= 1
                 pumpprogress += 1
+                if app.event.isSet():
+                    break
                 if not progress_q.full():
                     if pumptotal == 0:
                         pumptotal = 1
@@ -216,9 +236,8 @@ def setpump(threadName,q):
     command = "pigs w %d 0" % PUMP
     subprocess.call(command,shell=True)
 
-root = tk.Tk()
-root.title("Sine Generator")
 app = Application(master = root)
+app.pack()
 thread1 = genThread(1, "Generator",gen_q)
 thread2 = pumpThread(2, "Pump",pump_q)
 thread1.start()
