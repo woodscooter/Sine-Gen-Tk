@@ -10,8 +10,9 @@ import subprocess
 
 
 PUMP = 15  # GPIO15, pin 10
-gen_q = queue.Queue(3)
-pump_q = queue.Queue(3)
+gen_q = queue.Queue(1)
+pump_q = queue.Queue(1)
+progress_q = queue.Queue(1)
 
 class Application (tk.Frame):
     def __init__(self,master=None):
@@ -38,15 +39,16 @@ class Application (tk.Frame):
         self.genstate.set ("OFF")
         self.pumpstate = tk.StringVar()
         self.pumpstate.set ("OFF")
+        self.progress_var = tk.StringVar()
+        self.progress_var.set(50.0)
 
         self.create_widgets()
     def create_widgets(self):
 
         default_font = font.nametofont("TkDefaultFont")
         default_font.configure(family='Liberation Sans', size=24, weight='bold')
-#        self.title("Sine wave Generator")
 
-        tk.Label(self,text="SINE WAVE GENERATOR",pady=20).grid(row=1,column=1,columnspan=3)
+        tk.Label(self,text="SINE WAVE GENERATOR",pady=20).grid(row=0,column=0,columnspan=5)
 
         tk.Label(self,text="Frequency (kHz)",relief = 'raised', width=20,anchor='center', pady=5).grid(row=3,column=0)
         f1 = tk.Spinbox(self,textvariable = self.freq ,from_= 0.2, to = 10.01,increment=0.01,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=3,column=1)
@@ -77,7 +79,7 @@ class Application (tk.Frame):
 #        tk.Label(self,text="Signal").grid(row=9,column=0)
 #        tk.Label(self,text="Valve").grid(row=9,column=3)
         tk.Label(self,text="", width=5, pady=5).grid(row=9,column=2)
-        self.bar = tk.ttk.Progressbar(self,orient="horizontal",length=500,mode="indeterminate",maximum=100).grid(row=9,column=3,columnspan=2)
+        self.bar = tk.ttk.Progressbar(self,orient="horizontal",length=500,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
 
         tk.Button(self,text="Quit",command=self.quitnot).grid(row=10,column=4)
 
@@ -88,13 +90,15 @@ class Application (tk.Frame):
             gen_q.put(q1_data)
         if not pump_q.full():
             pump_q.put(q2_data)
-#        pumpval = float(self.pumprun.get()) + float(self.pumpstop.get())
+        if not progress_q.empty():
+            self.progress_data = progress_q.get()
+            self.progress_var.set(self.progress_data)
         if not self.runstate:
             thread2.stop()
             thread1.join()
             thread2.join()
             command = "./sox_kill.sh"
-            subprocess.run(command)
+            subprocess.call(command)
             root.destroy()
 
     def freq_change(self):
@@ -141,8 +145,9 @@ def generator(threadName,q):
             gen_freq2 = data[3]
             gen_duration = data[4]
             gen_gtime = data[5]
-            command = "./play -n -c1 synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f lowpass 1k 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
-            subprocess.run(command,shell=True)
+            command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
+            subprocess.call(command,shell=True)
+#            subprocess.call(command)
 
 def calc (parameter):
     number = float (parameter)
@@ -153,35 +158,63 @@ def setpump(threadName,q):
     data = [1,"OFF",0.0,0.0]
     sleepcmd = "pigs mils 333"
     command = "pigs modes %d W" % PUMP
-    subprocess.run(command,shell=True)
+    pumptotal = 0
+    pumpprogress = 0
+    subprocess.call(command,shell=True)
     while data[0]:
+        if pumpprogress >= pumptotal:
+            pumpprogress = 0
         if not q.empty():
             data = q.get()
+            pumptotal=calc(data[2]+data[3])
         if data[1] == "OFF":
             command = "pigs w %d 0" % PUMP
-            subprocess.run(command,shell=True)
-            subprocess.run(sleepcmd,shell=True)
+            subprocess.call(command,shell=True)
+            subprocess.call(sleepcmd,shell=True)
+            pumpprogress = 0
+            if not progress_q.full():
+                if pumptotal == 0:
+                    pumptotal = 1
+                queue3_data = 100*pumpprogress/pumptotal
+                progress_q.put(queue3_data)
             if thread2.stopped():
                 return
         else:
             command = "pigs w %d 1" % PUMP
-            subprocess.run(command,shell=True)
+            subprocess.call(command,shell=True)
             pumpcount = calc(data[2])
             while pumpcount:
-                subprocess.run(sleepcmd,shell=True)
+                subprocess.call(sleepcmd,shell=True)
                 pumpcount -= 1
+                pumpprogress += 1
+                if not progress_q.full():
+                    if pumptotal == 0:
+                        pumptotal = 1
+                    queue3_data = 100*pumpprogress/pumptotal
+                    progress_q.put(queue3_data)
             command = "pigs w %d 0" % PUMP
-            subprocess.run(command,shell=True)
+            subprocess.call(command,shell=True)
             pumpcount = calc (data[3])
             while pumpcount:
-                subprocess.run(sleepcmd,shell=True)
+                subprocess.call(sleepcmd,shell=True)
                 if thread2.stopped():
                     return
                 pumpcount -= 1
-        subprocess.run(sleepcmd,shell=True)
+                pumpprogress += 1
+                if not progress_q.full():
+                    if pumptotal == 0:
+                        pumptotal = 1
+                    queue3_data = 100*pumpprogress/pumptotal
+                    progress_q.put(queue3_data)
+#        subprocess.call(sleepcmd,shell=True)
+        if not progress_q.full():
+        	if pumptotal == 0:
+                    pumptotal = 1
+        	queue3_data = 100*pumpprogress/pumptotal
+        	progress_q.put(queue3_data)
     # thread finished, switch off
     command = "pigs w %d 0" % PUMP
-    subprocess.run(command,shell=True)
+    subprocess.call(command,shell=True)
 
 root = tk.Tk()
 root.title("Sine Generator")
