@@ -83,7 +83,7 @@ class Application (Frame):
 
         self.w = Canvas(self,width=110, height=18, relief="sunken")
         self.w.grid(row=9,column=1)
-        self.r = self.w.create_rectangle(0, 0, 99, 16, fill="silver")
+        self.r = self.w.create_rectangle(0, 0, 99, 16, fill="silver", outline='white')
 
         Label(self,text="", width=5).grid(row=9,column=2)
         self.bar = Progressbar(self,orient="horizontal",length=500,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
