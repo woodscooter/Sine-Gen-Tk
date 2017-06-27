@@ -110,6 +110,7 @@ class Application (Frame):
             self.event.clear()
 
         if not self.runstate:
+            thread1.stop()
             thread2.stop()
             thread1.join()
             thread2.join()
@@ -133,9 +134,14 @@ def update():
 class genThread(threading.Thread):
     def __init__(self,threadID,name,q):
         threading.Thread.__init__(self)
+        self._stop_event = threading.Event()
         self.threadID = threadID
         self.name = name
         self.q = q
+    def stop(self):
+        self._stop_event.set()
+    def stopped(self):
+        return self._stop_event.is_set()
     def run(self):
         generator(self.name,self.q)
 class pumpThread(threading.Thread):
@@ -163,6 +169,8 @@ def generator(threadName,q):
             gen_gtime = data[5]
             command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
             subprocess.call(command,shell=True)
+            if thread1.stopped():
+                return
 #            subprocess.call(command)
 
 def calc (parameter):
