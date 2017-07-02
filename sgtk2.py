@@ -10,7 +10,7 @@ import queue
 import subprocess
 
 root = Tk()
-root.title("Sine Generator")
+root.title("Control Panel")
 
 
 PUMP = 15  # GPIO15, pin 10
@@ -51,9 +51,9 @@ class Application (Frame):
     def create_widgets(self):
 
         default_font = font.nametofont("TkDefaultFont")
-        default_font.configure(family='Liberation Sans', size=24, weight='bold')
+        default_font.configure(family='Liberation Sans', size=20, weight='bold')
 
-        Label(self,text="SINE WAVE GENERATOR").grid(row=0,column=0,columnspan=5)
+        Label(self,text="RESONANCE CONTROL PANEL").grid(row=0,column=0,columnspan=5)
 
         Label(self,text="Frequency (kHz)",relief = 'raised', width=20,anchor='center').grid(row=3,column=0)
         f1 = Spinbox(self,textvariable = self.freq ,from_= 0.2, to = 10.01,increment=0.01,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=3,column=1)
