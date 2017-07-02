@@ -8,6 +8,7 @@ from tkinter.ttk import *
 import threading
 import queue
 import subprocess
+import time
 
 root = Tk()
 root.title("Control Panel")
@@ -126,10 +127,16 @@ class Application (Frame):
         self.shadow.set("1.0594")
         self.freq_change()
     def stopnot(self):
+        cont = self.genstate.get()
         self.genstate.set("OFF")
         self.pumpstate.set("OFF")
-        command = "./sox_kill.sh"
-        subprocess.call(command)
+        if cont == "CONT":
+            time.sleep(1)
+            command = "./sox_kill.sh"
+            subprocess.call(command)
+            time.sleep(1)
+            command = "./sox_kill.sh"
+            subprocess.call(command)
     def quitnot(self):
         self.runstate = 0
         command = "./sox_kill.sh"
@@ -168,12 +175,14 @@ def generator(threadName,q):
     while data[0]:
         if not q.empty():
             data = q.get()
-        if data[1] == "ON":
+        if data[1] != "OFF":
             gen_freq = data[2]
             gen_freq2 = data[3]
             gen_duration = data[4]
             gen_gtime = data[5]
             command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
+            if data[1] == "CONT":
+                command = "play -c1 -b16 --null synth 0 sin %2.3fk sin %2.3fk lowpass 9k 2>/dev/null" % ( gen_freq, gen_freq2 )
             subprocess.call(command,shell=True)
             if thread1.stopped():
                 return
