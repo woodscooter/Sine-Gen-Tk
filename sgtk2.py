@@ -89,7 +89,7 @@ class Application (Frame):
         self.bar = Progressbar(self,orient="horizontal",length=400,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
 
         Button(self,text="Quit",command=self.quitnot,width=7).grid(row=10,column=0,pady=20)
-        Button(self,text="Stop",command=self.quitnot,width=7).grid(row=10,column=1,pady=20)
+        Button(self,text="Stop",command=self.stopnot,width=7).grid(row=10,column=1,pady=20)
 
     def confess(self):
         q1_data = [ self.runstate, self.genstate.get(), float(self.freq.get()), float(self.freq2.get()), float(self.duration.get()), float(self.gtime.get()) ]
@@ -101,7 +101,7 @@ class Application (Frame):
         if not progress_q.empty():
             self.progress_data = progress_q.get()
             self.progress_var.set(self.progress_data)
-        if self.genstate.get() == 'ON':
+        if self.genstate.get() != 'OFF':
             self.w.itemconfig(self.r,fill="red")
         else:
             self.w.itemconfig(self.r,fill="silver")
@@ -115,8 +115,6 @@ class Application (Frame):
             thread2.stop()
             thread1.join()
             thread2.join()
-            command = "./sox_kill.sh"
-            subprocess.call(command)
             root.destroy()
 
     def freq_change(self):
@@ -127,8 +125,15 @@ class Application (Frame):
     def shadow_default(self):
         self.shadow.set("1.0594")
         self.freq_change()
+    def stopnot(self):
+        self.genstate.set("OFF")
+        self.pumpstate.set("OFF")
+        command = "./sox_kill.sh"
+        subprocess.call(command)
     def quitnot(self):
         self.runstate = 0
+        command = "./sox_kill.sh"
+        subprocess.call(command)
 def update():
     app.confess()
     app.after(100,update)
