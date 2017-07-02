@@ -53,7 +53,7 @@ class Application (Frame):
         default_font = font.nametofont("TkDefaultFont")
         default_font.configure(family='Liberation Sans', size=20, weight='bold')
 
-        Label(self,text="RESONANCE CONTROL PANEL").grid(row=0,column=0,columnspan=5)
+        Label(self,text="RESONANCE CONTROL PANEL").grid(row=0,column=0,columnspan=5,pady=20)
 
         Label(self,text="Frequency (kHz)",relief = 'raised', width=20,anchor='center').grid(row=3,column=0)
         f1 = Spinbox(self,textvariable = self.freq ,from_= 0.2, to = 10.01,increment=0.01,command=self.freq_change,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=3,column=1)
@@ -68,7 +68,7 @@ class Application (Frame):
         Label(self,text="", width=5).grid(row=5,column=2)
 
         Label(self,text="Generator is",relief = 'raised', width=20,anchor='center').grid(row=6,column=0)
-        self.gen =Spinbox(self,textvariable = self.genstate ,values=("OFF","ON"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=1)
+        self.gen =Spinbox(self,textvariable = self.genstate ,values=("OFF","ON","CONT"),relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=6,column=1)
         Label(self,text="Generator on (s)",relief = 'raised', width=20,anchor='center').grid(row=7,column=0)
         dur = Spinbox(self,textvariable = self.duration ,from_= 0.1, to = 1.9,increment=0.1,relief = 'sunken', bg='#fff',width=7, font = default_font).grid(row=7,column=1)
         Label(self,text="Generator off (s)",relief = 'raised', width=20,anchor='center').grid(row=8,column=0)
@@ -86,9 +86,10 @@ class Application (Frame):
         self.r = self.w.create_rectangle(0, 0, 99, 16, fill="silver", outline='white')
 
         Label(self,text="", width=5).grid(row=9,column=2)
-        self.bar = Progressbar(self,orient="horizontal",length=500,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
+        self.bar = Progressbar(self,orient="horizontal",length=400,mode="determinate",variable=self.progress_var,maximum=100).grid(row=9,column=3,columnspan=2)
 
-        Button(self,text="Quit",command=self.quitnot).grid(row=10,column=0)
+        Button(self,text="Quit",command=self.quitnot,width=7).grid(row=10,column=0,pady=20)
+        Button(self,text="Stop",command=self.quitnot,width=7).grid(row=10,column=1,pady=20)
 
     def confess(self):
         q1_data = [ self.runstate, self.genstate.get(), float(self.freq.get()), float(self.freq2.get()), float(self.duration.get()), float(self.gtime.get()) ]
