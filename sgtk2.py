@@ -192,7 +192,7 @@ def setpump(threadName,q):
             data = q.get()
             pumptotal=calc(data[2]+data[3])
         if data[1] == "OFF":
-            command = "pigs w %d 0" % PUMP
+            command = "pigs w %d 1" % PUMP
             subprocess.call(command,shell=True)
             subprocess.call(sleepcmd,shell=True)
             pumpprogress = 0
@@ -204,7 +204,7 @@ def setpump(threadName,q):
             if thread2.stopped():
                 return
         else:
-            command = "pigs w %d 1" % PUMP
+            command = "pigs w %d 0" % PUMP
             subprocess.call(command,shell=True)
             pumpcount = calc(data[2])
             while pumpcount:
@@ -218,7 +218,7 @@ def setpump(threadName,q):
                         pumptotal = 1
                     queue3_data = 100*pumpprogress/pumptotal
                     progress_q.put(queue3_data)
-            command = "pigs w %d 0" % PUMP
+            command = "pigs w %d 1" % PUMP
             subprocess.call(command,shell=True)
             pumpcount = calc (data[3])
             while pumpcount:
@@ -241,7 +241,7 @@ def setpump(threadName,q):
         	queue3_data = 100*pumpprogress/pumptotal
         	progress_q.put(queue3_data)
     # thread finished, switch off
-    command = "pigs w %d 0" % PUMP
+    command = "pigs w %d 1" % PUMP
     subprocess.call(command,shell=True)
 
 app = Application(master = root)
