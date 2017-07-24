@@ -180,9 +180,9 @@ def generator(threadName,q):
             gen_freq2 = data[3]
             gen_duration = data[4]
             gen_gtime = data[5]
-            command = "play -c1 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k : trim 0 %2.1f 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
+            command = "play -c2 -b16 --null synth %2.1f sin %2.3fk sin %2.3fk lowpass 9k remix - : trim 0 %2.1f 2>/dev/null" % (gen_duration, gen_freq, gen_freq2, gen_gtime)
             if data[1] == "CONT":
-                command = "play -c1 -b16 --null synth 0 sin %2.3fk sin %2.3fk lowpass 9k 2>/dev/null" % ( gen_freq, gen_freq2 )
+                command = "play -c2 -b16 --null synth 0 sin %2.3fk sin %2.3fk lowpass 9k remix - 2>/dev/null" % ( gen_freq, gen_freq2 )
             subprocess.call(command,shell=True)
             if thread1.stopped():
                 return
